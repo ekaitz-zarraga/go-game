@@ -21,7 +21,7 @@
 ;          Make 1 and decrease liberties of adjacent.
 ;          Also compute touched groups and check if they have to be deleted.
 ;
-;       3. Stones of it's color
+;       3. Stones of its color
 ;          Add to the group of the others.
 ;          WARNING: if more than 1 stone is in the adj merge groups!
 ;
@@ -58,7 +58,7 @@
 
         (do
           (let [this (put-stone color position)]
-            (if (= this me) ;CHECK THIS: If extender Ko rule check all history
+            (if (= this me) ;CHECK THIS: If extended Ko rule check all history
               (do
                 (notify-ko)       ; TODO basically tell the user there's a ko
                 (recur history)) ; and loop again in the same user
