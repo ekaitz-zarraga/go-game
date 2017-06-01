@@ -8,6 +8,9 @@
 ;  ...
 ;}
 ;
+;BETTER USE THIS
+;{ [X, Y] :b/:w ...}
+;
 ; - Check if the group must be deleted:
 ;     Sum all the liberties of the group -> if =0 delete.
 ;
@@ -40,7 +43,7 @@
 (defn turn
   ([]
     (let [them [{}]                 ; Create {} as first position
-         position (listen-user)]     ; Listen user
+         position (listen-user)]    ; Listen user
       (if (= position nil)          ; User passed, no position returned
         (recur (cons them them))    ; -> repeat empty
         (recur (cons (put-stone :b position them) them)))))
@@ -49,7 +52,7 @@
     (let [ them  (first history)                             ; Use for the next
            me    (second history)                            ; Check Ko
            color (if (= (rem (count history) 2) 0) :b :w )   ; Black starts NOTE: First is empty
-           position (listen-user color)                       ; Get move
+           position (listen-user color)                      ; Get move
          ]
       (if (= position nil)
         (if (= them me)
@@ -60,7 +63,7 @@
           (let [this (put-stone color position)]
             (if (= this me) ;CHECK THIS: If extended Ko rule check all history
               (do
-                (notify-ko)       ; TODO basically tell the user there's a ko
+                (notify-ko)      ; TODO basically tell the user there's a ko
                 (recur history)) ; and loop again in the same user
               (recur (cons this history)))))))))
 
@@ -76,31 +79,30 @@
         :when (and (not= dx dy) (not= (- dx) dy))]
     [(+ x dx) (+ y dy)]))
 
-(defn process-position ;TODO
+(defn get-touching
   [position board]
-  (let [ neighbors (get-neighbors pos) ]
-    ()
-    ))
+  (select-keys board (get-neighbors position)))
+
+(defn calc-liberties
+  [pos touched size]
+  (- 4
+    (count touched)
+    (count (filter #(or (= % (dec size)) (= % 0)) ))))
+
+(defn process-board
+  [board stones]
+  ; TODO GET ALL THE STONES ON THE GROUP
+  )
 
 (defn generic-stone
-  [size color pos status]
-    (let [ neighbors  (get-neighbors pos)
-           touched    (select-keys status neighbors)]
-      (->> { pos
-              { :color color
-                :liberties
-                  ; Liberties: -1 per touched border -1 per neighbor
-                  (- 4
-                    (count touched)
-                    (count (filter #(or (= % (dec size)) (= % 0)) pos)))
-                :group
-                  ; GroupID is max GroupID +1 others will be updated
-                  (->> status
-                    (map #(or (:pos (second %)) 0))
-                    (apply max)
-                    inc) }}
-        (into status)
-        (process-position pos))))
+  [size color pos board]
+  (let [board   (assoc board pos color)
+        touched (get-touching pos board)]
+    (as-> touched t
+        (filter (fn [[p c]] (not= c color)) t)
+        (assoc t pos color) ; It it touches any stone with the same color will merge the groups, considering itself is enough
+        (process-board board t)))
+  )
 
 (defn generic-listen-user ;TODO
   [size]
