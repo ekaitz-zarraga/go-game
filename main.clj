@@ -89,10 +89,15 @@
     (count touched)
     (count (filter #(or (= % (dec size)) (= % 0)) ))))
 
-(defn process-board
+(defn get-group
   [board stones]
-  ; TODO GET ALL THE STONES ON THE GROUP
-  )
+   (let [[pos color] (first stones)
+        candidates (->> (get-touching pos board)         ; Get adjacent stones
+                        (filter (fn [[p c]] (= c color))); Get same color
+                        (filter #((not (in? stones)))))] ; Don't process twice
+    (if (empty? candidates)
+      (stones)
+      (reduce #(get-group board (cons %2 %1)) stones))))
 
 (defn generic-stone
   [size color pos board]
