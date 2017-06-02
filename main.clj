@@ -106,7 +106,7 @@
     (as-> touched t
         (filter (fn [[p c]] (not= c color)) t)
         (assoc t pos color) ; It it touches any stone with the same color will merge the groups, considering itself is enough
-        (process-board board t)))
+        (process-board board t))) ;TODO
   )
 
 (defn generic-listen-user ;TODO
