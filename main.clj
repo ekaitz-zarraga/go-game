@@ -97,7 +97,7 @@
                         (filter #((not (in? stones)))))] ; Don't process twice
     (if (empty? candidates)
       (stones)
-      (reduce #(get-group board (cons %2 %1)) stones))))
+      (reduce #(get-group board (cons %2 %1)) stones candidates))))
 
 (defn generic-stone
   [size color pos board]
