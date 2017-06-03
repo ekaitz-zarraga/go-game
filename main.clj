@@ -91,22 +91,30 @@
 
 (defn get-group
   [board stones]
-   (let [[pos color] (first stones)
+   (let [[pos color] (last stones)
         candidates (->> (get-touching pos board)         ; Get adjacent stones
                         (filter (fn [[p c]] (= c color))); Get same color
                         (filter #((not (in? stones)))))] ; Don't process twice
     (if (empty? candidates)
       (stones)
-      (reduce #(get-group board (cons %2 %1)) stones candidates))))
+      (into {} (reduce #(get-group board (cons %2 %1)) stones candidates)))))
 
 (defn generic-stone
   [size color pos board]
   (let [board   (assoc board pos color)
         touched (get-touching pos board)]
-    (as-> touched t
-        (filter (fn [[p c]] (not= c color)) t)
-        (assoc t pos color) ; It it touches any stone with the same color will merge the groups, considering itself is enough
-        (process-board board t))) ;TODO
+    (->> touched
+        (filter (fn [[p c]] (not= c color)))
+        (cons [pos color])
+        (map #(get-group board %1))
+        (map keys)
+        (map #(reduce (fn [libs pos]
+                          (let [touching (get-touching pos board)]
+                            (+ libs (calc-liberites pos touching size))))
+                      %))
+        (filter #(= 0 %))
+        (apply dissoc board)
+      ))
   )
 
 (defn generic-listen-user ;TODO
