@@ -40,40 +40,8 @@
   [coll el]
   (some #(= el %) coll))
 
-(defn turn
-  ([]
-    (let [them [{}]                 ; Create {} as first position
-         position (listen-user)]    ; Listen user
-      (if (= position nil)          ; User passed, no position returned
-        (recur (cons them them))    ; -> repeat empty
-        (recur (cons (put-stone :b position them) them)))))
-
-  ([history]
-    (let [ them  (first history)                             ; Use for the next
-           me    (second history)                            ; Check Ko
-           color (if (= (rem (count history) 2) 0) :b :w )   ; Black starts NOTE: First is empty
-           position (listen-user color)                      ; Get move
-         ]
-      (if (= position nil)
-        (if (= them me)
-          history                         ; Both passed, game ends
-          (recur (cons them history)))    ; I passed, repeat last step and go
-
-        (do
-          (let [this (put-stone color position)]
-            (if (= this me) ;CHECK THIS: If extended Ko rule check all history
-              (do
-                (notify-ko)      ; TODO basically tell the user there's a ko
-                (recur history)) ; and loop again in the same user
-              (recur (cons this history)))))))))
-
-(defn get-size ; TODO
-  []
-  19
-  )
-
 (defn get-neighbors
-  [x y]
+  [[x y]]
   (for [dx [-1 0 1]
         dy [-1 0 1]
         :when (and (not= dx dy) (not= (- dx) dy))]
@@ -99,27 +67,104 @@
       (stones)
       (into {} (reduce #(get-group board (cons %2 %1)) stones candidates)))))
 
-(defn generic-stone
+(defn generic-stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
   [size color pos board]
   (let [board   (assoc board pos color)
         touched (get-touching pos board)]
     (->> touched
-        (filter (fn [[p c]] (not= c color)))
-        (cons [pos color])
+        (filter #(not= (val %) color))
+        (cons [pos color]) ; FIXME NOOO suicide must be checked after conquest
         (map #(get-group board %1))
         (map keys)
         (map #(reduce (fn [libs pos]
                           (let [touching (get-touching pos board)]
-                            (+ libs (calc-liberites pos touching size))))
+                            (+ libs (calc-liberties pos touching size))))
                       %))
         (filter #(= 0 %))
         (apply dissoc board)
       ))
   )
 
-(defn generic-listen-user ;TODO
-  [size]
-)
+(defn create-go
+  [get-size generic-listen-user notify-ko]
+  (let [ size        (get-size)
+         put-stone   (partial generic-stone size)
+         listen-user (partial generic-listen-user size)]
+    (defn turn
+      ([]
+        (let [them {}                         ; Create {} as first position
+             position (listen-user :b them)]  ; Listen user
+          (if (nil? position)                 ; User passed, no position returned
+            (turn (cons them [them]))         ; -> repeat empty
+            (turn (cons (put-stone :b position them) them)))))
 
-(def put-stone (partial generic-stone (get-size)))
-(def listen-user (partial generic-listen-user (get-size)))
+      ([history]
+        (let [ them  (last history)                              ; Use for the next
+               me    (last (drop 1 history))                     ; Check Ko
+               color (if (= (rem (count history) 2) 0) :b :w )   ; Black starts NOTE: First is empty
+               position (listen-user color them)]                ; Get move
+
+          (if (nil? position)
+            (if (= them me)
+              history                        ; Both passed, game ends
+              (turn (cons them history)))    ; I passed, repeat last step and go
+
+            (do
+              (let [this (put-stone color position them)]
+                (if (= this me) ;CHECK THIS: If extended Ko rule check all history
+                  (do
+                    (notify-ko color); TODO basically tell the user there's a ko
+                    (turn history)) ; and loop again in the same user
+                  (turn (cons this history)))))))))))
+
+
+(defn extract-coordinates
+  [text]
+  (read-string text)) ; FIXME ERROR HANDLING
+
+(defn generate-board
+  [size stones]
+  (let [init-board (for [x (range 0 size)
+                         y (range 0 size)]
+                           [x y])]
+    (loop [remaining (map #(let [found (get stones %)]
+                             (if found
+                               (if (= found :b)
+                                 "B"
+                                 "W")
+                             " ")) init-board)
+           result    (concat (repeat (+ 2 size) "+") ["\n"])]
+      (if (= 0 (count remaining))
+        (concat result (repeat (+ 2 size) "+"))
+        (recur (drop size remaining) (concat result ["+"] (take size remaining) ["+\n"]))))))
+
+(defn get-input
+  [text]
+  (println text)
+  (read-line))
+
+(defn generic-listen-user
+  [size color board]
+  (println (apply str (generate-board size board)))
+  (println "Introduce your stone coordinates [X,Y] or write 'pass' to pass")
+  (loop [input (get-input "What is your decision?")]
+    (let [coords (extract-coordinates input)]
+      (if (= "pass" (str coords))
+        nil
+        (if (or (<= size (first coords)) (<= size (second coords)))
+           (recur (get-input "Coordinates outside the board. Try again."))
+           (if (not= nil (get board coords))
+             (recur (get-input "Coordinate is filled. Try another one."))
+             coords))))))
+
+(defn notify-ko ; TODO
+  [color]
+  (println "That stone makes a Ko, try another move")
+  )
+
+(defn get-size ; TODO
+  []
+  19)
+
+
+((create-go get-size generic-listen-user notify-ko))
