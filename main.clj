@@ -59,31 +59,32 @@
 
 (defn get-group
   [board stones]
-   (let [[pos color] (last stones)
-        candidates (->> (get-touching pos board)         ; Get adjacent stones
-                        (filter (fn [[p c]] (= c color))); Get same color
-                        (filter #((not (in? stones)))))] ; Don't process twice
-    (if (empty? candidates)
-      (stones)
-      (into {} (reduce #(get-group board (cons %2 %1)) stones candidates)))))
+  (let [[pos color] (last stones)
+        a (println stones)
+       candidates (->> (get-touching pos board)         ; Get adjacent stones
+                       (filter (fn [[p c]] (= c color))); Get same color
+                       (filter #(not (in? stones (key %)))))] ; Don't process twice
+   (if (empty? candidates)
+     stones
+     (into {} (reduce #(get-group board (cons %2 %1)) stones candidates)))))
 
 (defn generic-stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
   [size color pos board]
   (let [board   (assoc board pos color)
         touched (get-touching pos board)]
-    (->> touched
-        (filter #(not= (val %) color))
-        (cons [pos color]) ; FIXME NOOO suicide must be checked after conquest
-        (map #(get-group board %1))
-        (map keys)
-        (map #(reduce (fn [libs pos]
-                          (let [touching (get-touching pos board)]
-                            (+ libs (calc-liberties pos touching size))))
-                      %))
-        (filter #(= 0 %))
-        (apply dissoc board)
-      ))
-  )
+    (if (empty? touched)
+      board
+      (->> touched ;FIXME NOT WORKING
+          (filter #(not= (val %) color))
+          (map #(get-group board [%])) ;FIXME NOT CHECKING SUICIDE
+          (map keys)
+          (map #(reduce (fn [libs pos]
+                            (let [touching (get-touching pos board)]
+                              (+ libs (calc-liberties pos touching size))))
+                        %))
+          (filter #(= 0 %))
+          (apply dissoc board))
+      )))
 
 (defn create-go
   [get-size generic-listen-user notify-ko]
@@ -99,23 +100,22 @@
             (turn (cons (put-stone :b position them) them)))))
 
       ([history]
-        (let [ them  (last history)                              ; Use for the next
-               me    (last (drop 1 history))                     ; Check Ko
+        (let [ them  (first history)                             ; Use for the next
+               me    (first (drop 1 history))                    ; Check Ko
                color (if (= (rem (count history) 2) 0) :b :w )   ; Black starts NOTE: First is empty
                position (listen-user color them)]                ; Get move
-
           (if (nil? position)
             (if (= them me)
               history                        ; Both passed, game ends
-              (turn (cons them history)))    ; I passed, repeat last step and go
+              (recur (cons them history)))    ; I passed, repeat last step and go
 
             (do
               (let [this (put-stone color position them)]
                 (if (= this me) ;CHECK THIS: If extended Ko rule check all history
                   (do
                     (notify-ko color); TODO basically tell the user there's a ko
-                    (turn history)) ; and loop again in the same user
-                  (turn (cons this history)))))))))))
+                    (recur history)) ; and loop again in the same user
+                  (recur (cons this history)))))))))))
 
 
 (defn extract-coordinates
@@ -134,7 +134,7 @@
                                  "W")
                              " ")) init-board)
            result    (concat (repeat (+ 2 size) "+") ["\n"])]
-      (if (= 0 (count remaining))
+      (if (empty? remaining)
         (concat result (repeat (+ 2 size) "+"))
         (recur (drop size remaining) (concat result ["+"] (take size remaining) ["+\n"]))))))
 
