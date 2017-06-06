@@ -1,39 +1,13 @@
-; Board shape: a list of stones
-;{
-;  [X, Y] {
-;   :group    N
-;   :liberties N
-;   :color    :b/:w
-;   }
-;  ...
-;}
-;
-;BETTER USE THIS
+;STONES:
 ;{ [X, Y] :b/:w ...}
 ;
 ; - Check if the group must be deleted:
 ;     Sum all the liberties of the group -> if =0 delete.
 ;
-; - Add a new stone to the board:
-;     find adjacent stones and check options:
-;
-;       1. No stones:
-;          Create new group with only this stone
-;
-;       2. Only of the other color
-;          Make 1 and decrease liberties of adjacent.
-;          Also compute touched groups and check if they have to be deleted.
-;
-;       3. Stones of its color
-;          Add to the group of the others.
-;          WARNING: if more than 1 stone is in the adj merge groups!
-;
 ; - If new stones are in the border start the liberty count in -1 per border
 ; they touch.
-;   WARNING: liberties are always <= initial value.
 ;
 ; - Ko rule. Status can't be repeated. Save old statuses.
-;   COOL! Intersting for repetitions.
 
 (defn in?
   "Gives true if el in coll. nil if not."
