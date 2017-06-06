@@ -31,7 +31,9 @@
     (count touched)
     (count (filter #(or (= % (dec size)) (= % 0)) pos))))
 
-(defn get-group
+(defn get-group ; FIXME input arguments separation stone to check vs acc
+  "Gives the group the stones are in.
+   Board and stones are hash-maps"
   [board stones]
   (let [stone      (first stones)
         pos        (key stone)
@@ -41,7 +43,7 @@
                         (filter #(not (in? stones %))))] ; Don't process twice
    (if (empty? candidates)
      stones
-     (into {} (reduce #(get-group board (cons %2 %1)) stones candidates)))))
+     (into {} (reduce #(get-group board (conj %1 %2)) stones candidates)))))
 
 (defn generic-stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
   [size color pos board]
@@ -71,18 +73,18 @@
         (let [them {}                         ; Create {} as first position
              position (listen-user :b them)]  ; Listen user
           (if (nil? position)                 ; User passed, no position returned
-            (turn (cons them [them]))         ; -> repeat empty
-            (turn (cons (put-stone :b position them) them)))))
+            (turn (conj [them] them))         ; -> repeat empty
+            (turn (conj [them] (put-stone :b position them))))))
 
       ([history]
-        (let [ them  (first history)                             ; Use for the next
-               me    (first (drop 1 history))                    ; Check Ko
-               color (if (= (rem (count history) 2) 0) :b :w )   ; Black starts NOTE: First is empty
+        (let [ them  (last history)                              ; Use for the next
+               me    (last (drop-last 1 history))                ; Check Ko
+               color (if (= (rem (count history) 2) 0) :w :b )   ; Black starts NOTE: First is empty
                position (listen-user color them)]                ; Get move
           (if (nil? position)
             (if (= them me)
               history                        ; Both passed, game ends
-              (recur (cons them history)))    ; I passed, repeat last step and go
+              (recur (conj history them)))    ; I passed, repeat last step and go
 
             (do
               (let [this (put-stone color position them)]
@@ -90,7 +92,7 @@
                   (do
                     (notify-ko color); TODO basically tell the user there's a ko
                     (recur history)) ; and loop again in the same user
-                  (recur (cons this history)))))))))))
+                  (recur (conj history this)))))))))))
 
 
 (defn extract-coordinates
