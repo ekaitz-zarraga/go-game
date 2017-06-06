@@ -80,9 +80,7 @@
           (map #(get-group board (into {} [%]))) ;FIXME NOT CHECKING SUICIDE
           (map keys)
           (filter #(= 0 (reduce (fn [libs pos]
-                                  (let [hola (println pos)
-                                        touching (get-touching pos board)]
-                                    (println "libs " libs  " position " pos)
+                                  (let [touching (get-touching pos board)]
                                     (+ libs (calc-liberties pos touching size))))
                                 0
                                 %)))
