@@ -55,15 +55,16 @@
   [pos touched size]
   (- 4
     (count touched)
-    (count (filter #(or (= % (dec size)) (= % 0)) ))))
+    (count (filter #(or (= % (dec size)) (= % 0)) pos))))
 
 (defn get-group
   [board stones]
-  (let [[pos color] (last stones)
-        a (println stones)
-       candidates (->> (get-touching pos board)         ; Get adjacent stones
-                       (filter (fn [[p c]] (= c color))); Get same color
-                       (filter #(not (in? stones (key %)))))] ; Don't process twice
+  (let [stone      (first stones)
+        pos        (key stone)
+        color      (val stone)
+        candidates (->> (get-touching pos board)         ; Get adjacent stones
+                        (filter #(= color (val %)))      ; Get same color
+                        (filter #(not (in? stones %))))] ; Don't process twice
    (if (empty? candidates)
      stones
      (into {} (reduce #(get-group board (cons %2 %1)) stones candidates)))))
@@ -74,17 +75,19 @@
         touched (get-touching pos board)]
     (if (empty? touched)
       board
-      (->> touched ;FIXME NOT WORKING
+      (->> touched
           (filter #(not= (val %) color))
-          (map #(get-group board [%])) ;FIXME NOT CHECKING SUICIDE
+          (map #(get-group board (into {} [%]))) ;FIXME NOT CHECKING SUICIDE
           (map keys)
-          (map #(reduce (fn [libs pos]
-                            (let [touching (get-touching pos board)]
-                              (+ libs (calc-liberties pos touching size))))
-                        %))
-          (filter #(= 0 %))
-          (apply dissoc board))
-      )))
+          (filter #(= 0 (reduce (fn [libs pos]
+                                  (let [hola (println pos)
+                                        touching (get-touching pos board)]
+                                    (println "libs " libs  " position " pos)
+                                    (+ libs (calc-liberties pos touching size))))
+                                0
+                                %)))
+          (apply concat)
+          (apply dissoc board)))))
 
 (defn create-go
   [get-size generic-listen-user notify-ko]
