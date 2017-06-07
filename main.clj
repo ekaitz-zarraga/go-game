@@ -45,7 +45,7 @@
      stones
      (into {} (reduce #(get-group board (conj %1 %2)) stones candidates)))))
 
-(defn generic-stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
+(defn stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
   [size color pos board]
   (let [board   (assoc board pos color)
         touched (get-touching pos board)]
@@ -64,10 +64,10 @@
           (apply dissoc board)))))
 
 (defn create-go
-  [get-size generic-listen-user notify-ko]
+  [get-size listen-user notify-ko]
   (let [ size        (get-size)
-         put-stone   (partial generic-stone size)
-         listen-user (partial generic-listen-user size)]
+         put-stone   (partial stone size)
+         listen-user (partial listen-user size)]
     (defn turn
       ([]
         (let [them {}                         ; Create {} as first position
@@ -120,7 +120,7 @@
   (println text)
   (read-line))
 
-(defn generic-listen-user
+(defn listen-user
   [size color board]
   (println (apply str (generate-board size board)))
   (println "Introduce your stone coordinates [X,Y] or write 'pass' to pass")
@@ -144,4 +144,4 @@
   19)
 
 
-((create-go get-size generic-listen-user notify-ko))
+((create-go get-size listen-user notify-ko))
