@@ -1,5 +1,8 @@
-;STONES:
-;{ [X, Y] :b/:w ...}
+; -----------------------------------------------------------------------------
+; ENGINE:
+; -----------------------------------------------------------------------------
+; - Board data structure:
+;     { [X, Y] :b/:w ...}
 ;
 ; - Check if the group must be deleted:
 ;     Sum all the liberties of the group -> if =0 delete.
@@ -8,6 +11,7 @@
 ; they touch.
 ;
 ; - Ko rule. Status can't be repeated. Save old statuses.
+; -----------------------------------------------------------------------------
 
 (defn in?
   "Gives true if el in coll. nil if not."
@@ -15,6 +19,8 @@
   (some #(= el %) coll))
 
 (defn get-neighbors
+  "Receives [X Y] position, returns all adjacent coordinates with no boundary
+  checking"
   [[x y]]
   (for [dx [-1 0 1]
         dy [-1 0 1]
@@ -22,10 +28,14 @@
     [(+ x dx) (+ y dy)]))
 
 (defn get-touching
+  "Receives a position and the board hash-map and returns all to positions of
+  stones adjacent to the received position"
   [position board]
   (select-keys board (get-neighbors position)))
 
 (defn calc-liberties
+  "Receives a position, the adjacent stones collection and board size. Returns
+  the liberties of the received position"
   [pos touched size]
   (- 4
     (count touched)
@@ -56,7 +66,10 @@
     positions)
   )
 
-(defn stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
+(defn put-stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
+  "Puts stone with the received color in the received position of the size
+  sized board. Processes the board for conquest or suicide moves and returns
+  the processed board."
   [size color pos board]
   (let [board        (assoc board pos color)
         touched      (get-touching pos board)
@@ -75,9 +88,11 @@
         b-after-conq)))
 
 (defn create-go
+  "Receives user interaction related functions and retunrs a function to call
+  to play the game."
   [get-size listen-user notify-ko]
   (let [ size        (get-size)
-         put-stone   (partial stone size)
+         put-stone   (partial put-stone size)
          listen-user (partial listen-user size)]
     (defn turn
       ([]
@@ -106,6 +121,12 @@
                   (recur (conj history this)))))))))))
 
 
+
+
+; -----------------------------------------------------------------------------
+; This functions below are made to test the engine.
+; The engine works the same way for any functions with the same interface
+; -----------------------------------------------------------------------------
 (defn extract-coordinates
   [text]
   (read-string text)) ; FIXME ERROR HANDLING
