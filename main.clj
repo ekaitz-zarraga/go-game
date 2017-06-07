@@ -45,23 +45,34 @@
      stones
      (into {} (reduce #(get-group board (conj %1 %2)) stones candidates)))))
 
+(defn get-liberties-positions
+  "Returns the sum of the liberties of a sequence of positions."
+  [board size positions]
+  (reduce
+    (fn [libs pos]
+      (let [touching (get-touching pos board)]
+        (+ libs (calc-liberties pos touching size))))
+    0
+    positions)
+  )
+
 (defn stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
   [size color pos board]
-  (let [board   (assoc board pos color)
-        touched (get-touching pos board)]
-    (if (empty? touched)
-      board
-      (->> touched
-          (filter #(not= (val %) color))
-          (map #(get-group board (into {} [%]))) ;FIXME NOT CHECKING SUICIDE
-          (map keys)
-          (filter #(= 0 (reduce (fn [libs pos]
-                                  (let [touching (get-touching pos board)]
-                                    (+ libs (calc-liberties pos touching size))))
-                                0
-                                %)))
-          (apply concat)
-          (apply dissoc board)))))
+  (let [board        (assoc board pos color)
+        touched      (get-touching pos board)
+        b-after-conq (if (empty? touched)
+                       board
+                       (->> touched
+                           (filter #(not= (val %) color))
+                           (map #(keys (get-group board (into {} [%]))))
+                           (filter #(= 0 (get-liberties-positions board size %)))
+                           (apply concat)
+                           (apply dissoc board)))
+        this-group   (keys (get-group b-after-conq {pos color}))]
+
+      (if (= 0 (get-liberties-positions b-after-conq size this-group))
+        (apply dissoc b-after-conq this-group)
+        b-after-conq)))
 
 (defn create-go
   [get-size listen-user notify-ko]
