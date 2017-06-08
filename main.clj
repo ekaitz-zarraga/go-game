@@ -88,7 +88,7 @@
         b-after-conq)))
 
 (defn create-go
-  "Receives user interaction related functions and retunrs a function to call
+  "Receives user interaction related functions and returns a function to call
   to play the game."
   [get-size listen-user notify-ko]
   (let [ size        (get-size)
