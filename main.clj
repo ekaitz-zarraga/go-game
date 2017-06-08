@@ -48,9 +48,9 @@
   (let [stone      (first stones)
         pos        (key stone)
         color      (val stone)
-        candidates (->> (get-touching pos board)         ; Get adjacent stones
-                        (filter #(= color (val %)))      ; Get same color
-                        (filter #(not (in? stones %))))] ; Don't process twice
+        candidates (->> (get-touching pos board)        ; Get adjacent stones
+                        (filter #(= color (val %)))     ; Get same color
+                        (filter #(not (in? stones %))))]; Don't process twice
    (if (empty? candidates)
      stones
      (into {} (reduce #(get-group board (conj %1 %2)) stones candidates)))))
@@ -66,7 +66,8 @@
     positions)
   )
 
-(defn put-stone ; FIXME if 2 adjacent stones are in the same group they are processed twice
+(defn put-stone
+  ; FIXME if 2 adjacent stones are in the same group they are processed twice
   "Puts stone with the received color in the received position of the size
   sized board. Processes the board for conquest or suicide moves and returns
   the processed board."
@@ -96,27 +97,27 @@
          listen-user (partial listen-user size)]
     (defn turn
       ([]
-        (let [them {}                         ; Create {} as first position
-             position (listen-user :b them)]  ; Listen user
-          (if (nil? position)                 ; User passed, no position returned
-            (turn (conj [them] them))         ; -> repeat empty
+        (let [them {}                       ; Create {} as first position
+             position (listen-user :b them)]; Listen user
+          (if (nil? position)               ; User passed, no position returned
+            (turn (conj [them] them))       ; -> repeat empty
             (turn (conj [them] (put-stone :b position them))))))
 
       ([history]
-        (let [ them  (last history)                              ; Use for the next
-               me    (last (drop-last 1 history))                ; Check Ko
-               color (if (= (rem (count history) 2) 0) :w :b )   ; Black starts NOTE: First is empty
-               position (listen-user color them)]                ; Get move
+        (let [ them  (last history)                           ; Use for the next
+               me    (last (drop-last 1 history))             ; Check Ko
+               color (if (= (rem (count history) 2) 0) :w :b ); Black starts NOTE: First is empty
+               position (listen-user color them)]             ; Get move
           (if (nil? position)
             (if (= them me)
-              history                        ; Both passed, game ends
-              (recur (conj history them)))    ; I passed, repeat last step and go
+              history                     ; Both passed, game ends
+              (recur (conj history them))); I passed, repeat last step and go
 
             (do
               (let [this (put-stone color position them)]
                 (if (= this me) ;CHECK THIS: If extended Ko rule check all history
                   (do
-                    (notify-ko color); TODO basically tell the user there's a ko
+                    (notify-ko color); Basically tell the user there's a ko
                     (recur history)) ; and loop again in the same user
                   (recur (conj history this)))))))))))
 
@@ -166,12 +167,12 @@
              (recur (get-input "Coordinate is filled. Try another one."))
              coords))))))
 
-(defn notify-ko ; TODO
+(defn notify-ko
   [color]
   (println "That stone makes a Ko, try another move")
   )
 
-(defn get-size ; TODO
+(defn get-size
   []
   19)
 
