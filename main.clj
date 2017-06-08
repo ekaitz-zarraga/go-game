@@ -88,6 +88,21 @@
         (apply dissoc b-after-conq this-group)
         b-after-conq)))
 
+(defn count-conquests
+  "Counts all the conquested stones and returns {:b count-black :w count-white}
+  hash-map from history."
+  [history]
+  (first (reduce
+           (fn [[cnt prev] step]
+             (let [conquested (->> (keys step)
+                                   (apply dissoc prev step))]
+               [(assoc cnt
+                  :b (+ (:b cnt) (count (filter #(= (val %) :b) conquested)))
+                  :w (+ (:w cnt) (count (filter #(= (val %) :w) conquested))))
+                step]))
+           [{:b 0 :w 0} {}]
+           history)))
+
 (defn create-go
   "Receives user interaction related functions and returns a function to call
   to play the game."
@@ -177,4 +192,4 @@
   19)
 
 
-((create-go get-size listen-user notify-ko))
+(println (count-conquests ((create-go get-size listen-user notify-ko))))
