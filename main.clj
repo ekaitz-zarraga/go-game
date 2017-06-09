@@ -94,8 +94,7 @@
   [history]
   (first (reduce
            (fn [[cnt prev] step]
-             (let [conquested (->> (keys step)
-                                   (apply dissoc prev step))]
+             (let [conquested (apply dissoc prev step (keys step))]
                [(assoc cnt
                   :b (+ (:b cnt) (count (filter #(= (val %) :b) conquested)))
                   :w (+ (:w cnt) (count (filter #(= (val %) :w) conquested))))
