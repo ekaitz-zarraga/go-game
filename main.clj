@@ -120,7 +120,7 @@
       ([history]
         (let [ them  (last history)                           ; Use for the next
                me    (last (drop-last 1 history))             ; Check Ko
-               color (if (= (rem (count history) 2) 0) :w :b ); Black starts NOTE: First is empty
+               color (if (even? (count history)) :w :b ); Black starts NOTE: First is empty
                position (listen-user color them)]             ; Get move
           (if (nil? position)
             (if (= them me)
