@@ -102,6 +102,48 @@
            [{:b 0 :w 0} {}]
            history)))
 
+(defn get-border
+  "Gets the border of an empty group"
+  ; TODO made but have to be tested
+  [full-board group]
+  (->> group
+       (mapcat #(get-touching (key %) full-board))  ; Get all the adjacents
+       (filter #(not= :e (val %)))                  ; Discard empty (internals)
+       ))
+
+(defn calculate-territories
+  "Calculates the territories conquested for each player in the received
+  board
+    Operation:
+    - Generate all the empty places on the board with :e
+    - Order :e by groups.
+    - If all the adjacent stones to the group are :w => :cw (conquested white)
+    - If all the adjacent stones to the group are :b => :cb (conquested black)
+    - Else :nc (not conquested)
+  "
+  [board size]
+    ; TODO
+    (loop [full-board (into (for [x (range 0 size)
+                                  y (range 0 size)]
+                                 { [x,y] :e })
+                            board)]
+          (let [empty-positions (filter #(= (val %) :e) full-board)
+                group-to-check  (get-group full-board [(first empty-positions)])
+                all-touch       (get-border full-board group-to-check)
+                touch-color     (map val all-touch)
+                color           (if (apply = touch-color)
+                                  (if (= :w (first touch-color))
+                                    :cw ;all are white => conquested white
+                                    :cb ;all are black => conquested black
+                                    )
+                                  :nc   ;color differs => not conquested
+                                  )]
+            (if (nil? group-to-check)
+              (recur (into full-board
+                           (map #(vector (key %) color) group-to-check)))
+              full-board))))
+
+
 (defn create-go
   "Receives user interaction related functions and returns a function to call
   to play the game."
@@ -124,7 +166,11 @@
                position (listen-user color them)]             ; Get move
           (if (nil? position)
             (if (= them me)
-              history                     ; Both passed, game ends
+              ; Both passed, game ends
+              ; - Calculate the conquested stones
+              ; - Ask players to remove the stones
+              ; - If they dont agree loop again
+              history ; TODO
               (recur (conj history them))); I passed, repeat last step and go
 
             (do
@@ -181,10 +227,24 @@
              (recur (get-input "Coordinate is filled. Try another one."))
              coords))))))
 
+(defn mark-lost
+  "When the game ends this function will be called to mark lost stones
+
+   Intended flow: TODO
+   - Following the turns order the player A marks the lost stones
+   - Player B marks lost stones later
+   - If they match stones are removed and game is finished. Points are counted
+     here
+   - If they don't match keep playing
+   - From the resulting board count
+  "
+  [size color board]
+  ; TODO TODO TODO
+  )
+
 (defn notify-ko
   [color]
-  (println "That stone makes a Ko, try another move")
-  )
+  (println "That stone makes a Ko, try another move"))
 
 (defn get-size
   []
